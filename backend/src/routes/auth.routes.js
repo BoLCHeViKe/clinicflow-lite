@@ -1,12 +1,10 @@
 const router = require('express').Router();
+const authController = require('../controllers/auth.controller');
+const { authMiddleware } = require('../middleware/auth.middleware');
+const { registerValidators, loginValidators } = require('../validators/auth.validators');
 
-// Rutas de autenticación - placeholder
-router.post('/register', (req, res) => {
-  res.json({ message: 'Ruta de registro en construcción' });
-});
-
-router.post('/login', (req, res) => {
-  res.json({ message: 'Ruta de login en construcción' });
-});
+router.post('/register', registerValidators, authController.register);
+router.post('/login', loginValidators, authController.login);
+router.get('/me', authMiddleware, authController.me);
 
 module.exports = router;
