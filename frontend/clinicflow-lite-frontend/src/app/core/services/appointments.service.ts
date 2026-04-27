@@ -38,4 +38,15 @@ export class AppointmentsService {
   delete(id: number): Observable<{ success: boolean; message: string }> {
     return this.http.delete<{ success: boolean; message: string }>(`${this.apiUrl}/${id}`);
   }
+
+  getDashboardStats(): Observable<DashboardStats> {
+    return this.http.get<DashboardStats>(`${this.apiUrl}/stats/summary`);
+  }
+}
+
+export interface DashboardStats {
+  total: number;
+  thisWeek: number;
+  byStatus: { status: string; count: number }[];
+  recent: Appointment[];
 }
