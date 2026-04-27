@@ -1,15 +1,20 @@
-# Entorno y Secretos
+# Entorno y secretos — NUNCA subir al repositorio
 .env
 .env.local
 .env.*.local
+
+# Dependencias
+node_modules/
+
+# Build del frontend
+dist/
+.angular/
 
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-
-# Dependencias (si usas Node.js)
-node_modules/
+*.log
 
 # Archivos de sistema
 .DS_Store
