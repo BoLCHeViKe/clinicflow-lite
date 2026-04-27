@@ -1,8 +1,14 @@
 const router = require('express').Router();
+const controller = require('../controllers/appointments.controller');
+const { authMiddleware } = require('../middleware/auth.middleware');
+const { createAppointmentValidators, updateAppointmentValidators } = require('../validators/appointments.validators');
 
-// GET /api/appointments — lista de prueba
-router.get('/', (req, res) => {
-  res.json({ message: 'Ruta de citas funcionando', data: [] });
-});
+router.use(authMiddleware);
+
+router.get('/', controller.getAll);
+router.get('/:id', controller.getById);
+router.post('/', createAppointmentValidators, controller.create);
+router.put('/:id', updateAppointmentValidators, controller.update);
+router.delete('/:id', controller.remove);
 
 module.exports = router;
