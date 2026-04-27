@@ -6,33 +6,29 @@ exports.getAll = async (req, res) => {
     const { status, search, page = 1, limit = 20 } = req.query;
     const offset = (page - 1) * limit;
 
-    let query = 'SELECT * FROM appointments';
+    const conditions = [];
     const params = [];
 
     if (status) {
-      query += ' WHERE status = ?';
+      conditions.push('a.status = ?');
       params.push(status);
     }
     if (search) {
-      const searchCondition = ` ${status ? 'AND' : 'WHERE'} (a.type LIKE ? OR a.notes LIKE ? OR p.name LIKE ?)`;
-      query = query.replace(/FROM appointments/, 'FROM appointments a LEFT JOIN patients p ON a.patientId = p.id');
-      query += searchCondition;
+      conditions.push('(a.type LIKE ? OR a.notes LIKE ? OR p.name LIKE ?)');
       params.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
-    query += ' ORDER BY appointmentDate DESC LIMIT ? OFFSET ?';
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+    const query = `SELECT a.* FROM appointments a LEFT JOIN patients p ON a.patientId = p.id ${where} ORDER BY a.appointmentDate DESC LIMIT ? OFFSET ?`;
     params.push(parseInt(limit), parseInt(offset));
 
     const [rows] = await pool.query(query, params);
-    
-    let countQuery = 'SELECT COUNT(*) as total FROM appointments';
+
     const countParams = [];
-    if (status) {
-      countQuery += ' WHERE status = ?';
-      countParams.push(status);
-    }
-    
-    const [[{ total }]] = await pool.query(countQuery, countParams);
+    const countConditions = [];
+    if (status) { countConditions.push('status = ?'); countParams.push(status); }
+    const countWhere = countConditions.length ? `WHERE ${countConditions.join(' AND ')}` : '';
+    const [[{ total }]] = await pool.query(`SELECT COUNT(*) as total FROM appointments ${countWhere}`, countParams);
 
     res.json({
       success: true,
@@ -97,7 +93,8 @@ exports.update = async (req, res) => {
       return res.status(404).json({ success: false, error: 'Cita no encontrada' });
     }
 
-    const fields = Object.keys(req.body).filter(k => req.body[k] !== undefined);
+    const ALLOWED_UPDATE_FIELDS = ['patientId', 'appointmentDate', 'duration', 'status', 'type', 'notes'];
+    const fields = Object.keys(req.body).filter(k => ALLOWED_UPDATE_FIELDS.includes(k) && req.body[k] !== undefined);
     if (fields.length === 0) {
       return res.status(400).json({ success: false, error: 'No hay campos para actualizar' });
     }
