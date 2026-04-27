@@ -1,0 +1,16 @@
+# Entorno y Secretos
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Dependencias (si usas Node.js)
+node_modules/
+
+# Archivos de sistema
+.DS_Store
+Thumbs.db
