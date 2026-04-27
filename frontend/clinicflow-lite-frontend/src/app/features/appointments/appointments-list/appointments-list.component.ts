@@ -26,10 +26,13 @@ import { AuthService } from '../../../core/services/auth.service';
         <h1>Citas clínicas</h1>
         <div class="header-actions">
           <span class="user-name">{{ auth.currentUser()?.name }}</span>
-          <button mat-stroked-button (click)="auth.logout()">Salir</button>
           <button mat-raised-button color="primary" routerLink="new">
             <mat-icon>add</mat-icon> Nueva cita
           </button>
+          <button mat-stroked-button routerLink="/dashboard">
+            <mat-icon>dashboard</mat-icon> Mi agenda
+          </button>
+          <button mat-stroked-button (click)="auth.logout()">Salir</button>
         </div>
       </div>
 
@@ -96,30 +99,26 @@ import { AuthService } from '../../../core/services/auth.service';
     </div>
   `,
   styles: [`
-    .list-container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+    .list-container { max-width: 960px; margin: 0 auto; padding: 28px 16px; }
     .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
-    .header-actions { display: flex; align-items: center; gap: 12px; }
-    .user-name { color: #555; }
+    .list-header h1 { margin: 0; }
+    .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .user-name { color: var(--cf-mid-dark); font-weight: 500; font-size: 14px; }
     .filters { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
     .filters mat-form-field { flex: 1; min-width: 200px; }
     .loading-state, .empty-state { text-align: center; padding: 48px; }
-    .empty-state mat-icon { font-size: 48px; height: 48px; width: 48px; color: #bbb; }
+    .empty-state mat-icon { font-size: 48px; height: 48px; width: 48px; color: var(--cf-pale); }
     .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-    .item-card { border: 1px solid #e0e0e0; border-radius: 8px; padding: 16px; background: #fff; }
+    .item-card { border-radius: 10px; padding: 16px; background: #fff; border: 1px solid var(--cf-lighter); transition: box-shadow .2s; }
+    .item-card:hover { box-shadow: 0 4px 16px rgba(0,146,224,.12); }
     .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .item-date { font-weight: 500; }
-    .item-type { font-size: 15px; margin: 4px 0; color: #333; }
+    .item-date { font-weight: 600; color: var(--cf-mid-dark); }
+    .item-type { font-size: 15px; margin: 4px 0; color: #1a1a2e; text-transform: capitalize; }
     .item-notes { font-size: 13px; color: #666; margin: 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .item-meta { display: flex; gap: 16px; margin-top: 8px; }
-    .item-meta small { color: #888; }
+    .item-meta small { color: var(--cf-soft); font-weight: 500; }
     .item-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
-    .status-badge { font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 500; }
-    .status-scheduled { background: #e3f2fd; color: #1565c0; }
-    .status-confirmed { background: #e8f5e9; color: #2e7d32; }
-    .status-completed { background: #f3e5f5; color: #6a1b9a; }
-    .status-cancelled { background: #fce4ec; color: #c62828; }
-    .status-no_show { background: #fff3e0; color: #e65100; }
-    .total { text-align: right; color: #888; margin-top: 16px; }
+    .total { text-align: right; color: var(--cf-pale); margin-top: 16px; font-size: 13px; }
   `],
 })
 export class AppointmentsListComponent implements OnInit {

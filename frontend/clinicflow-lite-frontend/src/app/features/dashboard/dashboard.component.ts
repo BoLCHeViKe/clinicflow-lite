@@ -18,7 +18,15 @@ import { AuthService } from '../../core/services/auth.service';
           <h1>Bienvenido, {{ auth.currentUser()?.name }}</h1>
           <p class="subtitle">Aquí tienes un resumen de tu actividad</p>
         </div>
-        <button mat-stroked-button (click)="auth.logout()">Salir</button>
+        <div class="header-actions">
+          <button mat-raised-button color="primary" routerLink="/appointments/new">
+            <mat-icon>add</mat-icon> Nueva cita
+          </button>
+          <button mat-stroked-button routerLink="/appointments">
+            <mat-icon>list</mat-icon> Ver todas las citas
+          </button>
+          <button mat-stroked-button (click)="auth.logout()">Salir</button>
+        </div>
       </div>
 
       @if (stats()) {
@@ -71,41 +79,30 @@ import { AuthService } from '../../core/services/auth.service';
         }
       }
 
-      <div class="quick-actions">
-        <button mat-raised-button color="primary" routerLink="/appointments/new">
-          <mat-icon>add</mat-icon> Nueva cita
-        </button>
-        <button mat-stroked-button routerLink="/appointments">
-          <mat-icon>list</mat-icon> Ver todas las citas
-        </button>
-      </div>
     </div>
   `,
   styles: [`
-    .dashboard-container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
-    .dashboard-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
-    .subtitle { color: #666; margin-top: 4px; }
-    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
-    .metric-card mat-card-content { display: flex; flex-direction: column; align-items: center; padding: 20px 16px; gap: 4px; }
-    .metric-card mat-icon { font-size: 32px; height: 32px; width: 32px; color: #666; }
-    .accent-blue mat-icon { color: #1565c0; }
-    .accent-green mat-icon { color: #2e7d32; }
-    .metric-value { font-size: 2rem; font-weight: 700; line-height: 1; }
-    .metric-label { font-size: 13px; color: #666; }
-    .recent-card { margin-bottom: 24px; }
+    .dashboard-container { max-width: 960px; margin: 0 auto; padding: 28px 16px; }
+    .dashboard-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
+    .dashboard-header h1 { margin: 0; }
+    .header-actions { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .subtitle { color: var(--cf-soft); margin-top: 4px; font-size: 15px; }
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .metric-card mat-card-content { display: flex; flex-direction: column; align-items: center; padding: 24px 16px; gap: 6px; }
+    .metric-card mat-icon { font-size: 34px; height: 34px; width: 34px; }
+    .accent-blue { background: linear-gradient(135deg, #e8f6fd, #d0eefa) !important; }
+    .accent-blue mat-icon { color: var(--cf-primary); }
+    .accent-green { background: linear-gradient(135deg, #e0f7fa, #b2ebf2) !important; }
+    .accent-green mat-icon { color: var(--cf-bright); }
+    .metric-value { font-size: 2.2rem; font-weight: 700; line-height: 1; color: var(--cf-dark); }
+    .metric-label { font-size: 12px; color: var(--cf-mid-dark); font-weight: 500; }
+    .recent-card { margin-bottom: 24px; background: #fff !important; }
     mat-card-header { display: flex; justify-content: space-between; align-items: center; padding: 16px 16px 0; }
-    .recent-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #f0f0f0; }
+    .recent-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid var(--cf-bg); }
     .recent-item:last-child { border-bottom: none; }
     .recent-info { display: flex; flex-direction: column; gap: 2px; }
-    .recent-title { font-weight: 500; }
-    .recent-date { font-size: 12px; color: #888; }
-    .quick-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 8px; }
-    .status-badge { font-size: 11px; padding: 2px 8px; border-radius: 12px; font-weight: 500; }
-    .status-scheduled { background: #e3f2fd; color: #1565c0; }
-    .status-confirmed { background: #e8f5e9; color: #2e7d32; }
-    .status-completed { background: #f3e5f5; color: #6a1b9a; }
-    .status-cancelled { background: #fce4ec; color: #c62828; }
-    .status-no_show { background: #fff3e0; color: #e65100; }
+    .recent-title { font-weight: 600; color: var(--cf-mid-dark); text-transform: capitalize; }
+    .recent-date { font-size: 12px; color: var(--cf-soft); }
   `],
 })
 export class DashboardComponent implements OnInit {

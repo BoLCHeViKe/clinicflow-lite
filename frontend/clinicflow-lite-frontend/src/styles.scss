@@ -1,39 +1,70 @@
-// Include theming for Angular Material with `mat.theme()`.
-// This Sass mixin will define CSS variables that are used for styling Angular Material
-// components according to the Material 3 design spec.
-// Learn more about theming and how to use it for your application's
-// custom components at https://material.angular.dev/guide/theming
 @use '@angular/material' as mat;
+
+:root {
+  --cf-dark:     #04078B;
+  --cf-mid-dark: #0359C9;
+  --cf-primary:  #0092E0;
+  --cf-bright:   #00B8F5;
+  --cf-sky:      #0AD6FF;
+  --cf-soft:     #5FD0E7;
+  --cf-pale:     #90E0EF;
+  --cf-lighter:  #ADE8F4;
+  --cf-bg:       #f0faff;
+}
 
 html {
   height: 100%;
-  @include mat.theme(
-    (
-      color: (
-        primary: mat.$azure-palette,
-        tertiary: mat.$blue-palette,
-      ),
-      typography: Roboto,
-      density: 0,
-    )
-  );
+  @include mat.theme((
+    color: (
+      primary: mat.$azure-palette,
+      tertiary: mat.$blue-palette,
+    ),
+    typography: Roboto,
+    density: 0,
+  ));
 }
 
 body {
-  // Default the application to a light color theme. This can be changed to
-  // `dark` to enable the dark color theme, or to `light dark` to defer to the
-  // user's system settings.
   color-scheme: light;
-
-  // Set a default background, font and text colors for the application using
-  // Angular Material's system-level CSS variables. Learn more about these
-  // variables at https://material.angular.dev/guide/system-variables
-  background-color: var(--mat-sys-surface);
-  color: var(--mat-sys-on-surface);
+  background-color: var(--cf-bg);
+  color: #1a1a2e;
   font: var(--mat-sys-body-medium);
-
-  // Reset the user agent margin.
   margin: 0;
   height: 100%;
 }
-/* You can add global styles to this file, and also import other style files */
+
+/* Headings con azul oscuro */
+h1, h2 { color: var(--cf-dark); }
+h3 { color: var(--cf-mid-dark); }
+
+/* Cards con borde suave azul claro */
+mat-card {
+  border: 1px solid var(--cf-lighter) !important;
+  box-shadow: 0 2px 8px rgba(0, 146, 224, 0.08) !important;
+}
+
+/* Botón primario con azul medio */
+.mdc-button--raised, .mat-mdc-raised-button {
+  background-color: var(--cf-primary) !important;
+}
+
+/* Botones outlined */
+.mat-mdc-outlined-button {
+  border-color: var(--cf-primary) !important;
+  color: var(--cf-primary) !important;
+}
+
+/* Inputs — borde azul claro en focus */
+.mat-mdc-form-field.mat-focused .mdc-notched-outline__leading,
+.mat-mdc-form-field.mat-focused .mdc-notched-outline__notch,
+.mat-mdc-form-field.mat-focused .mdc-notched-outline__trailing {
+  border-color: var(--cf-primary) !important;
+}
+
+/* Status badges globales */
+.status-badge { font-size: 11px; padding: 3px 10px; border-radius: 12px; font-weight: 600; }
+.status-scheduled { background: #e0f4fb; color: var(--cf-mid-dark); }
+.status-confirmed  { background: #ccf0fa; color: var(--cf-dark); }
+.status-completed  { background: var(--cf-lighter); color: var(--cf-dark); }
+.status-cancelled  { background: #fce4ec; color: #b71c1c; }
+.status-no_show    { background: #fff3e0; color: #e65100; }
