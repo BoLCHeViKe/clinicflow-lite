@@ -1,5 +1,5 @@
-import { Component, OnInit, signal } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { Component, OnInit, signal, inject } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
@@ -7,39 +7,27 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatChipsModule } from '@angular/material/chips';
 import { AppointmentsService } from '../../../core/services/appointments.service';
 import { Appointment } from '../../../core/models/appointment.model';
-import { AuthService } from '../../../core/services/auth.service';
 
 @Component({
   selector: 'app-appointments-list',
   standalone: true,
   imports: [
-    CommonModule, DatePipe, RouterModule, FormsModule,
+    DatePipe, RouterModule, FormsModule,
     MatButtonModule, MatIconModule, MatInputModule,
-    MatSelectModule, MatProgressSpinnerModule, MatChipsModule,
+    MatSelectModule, MatProgressSpinnerModule,
   ],
   template: `
     <div class="list-container">
       <div class="list-header">
-        <h1>Citas clínicas</h1>
-        <div class="header-actions">
-          <span class="user-name">{{ auth.currentUser()?.name }}</span>
-          <button mat-raised-button color="primary" routerLink="new">
-            <mat-icon>add</mat-icon> Nueva cita
-          </button>
-          <button mat-stroked-button routerLink="/dashboard">
-            <mat-icon>dashboard</mat-icon> Mi agenda
-          </button>
-          <button mat-stroked-button (click)="auth.logout()">Salir</button>
-        </div>
+        <h1>Historial de citas</h1>
       </div>
 
       <div class="filters">
         <mat-form-field appearance="outline">
           <mat-label>Buscar</mat-label>
-          <input matInput [(ngModel)]="searchTerm" (ngModelChange)="loadItems()" placeholder="Tipo, notas, paciente...">
+          <input matInput [(ngModel)]="searchTerm" (ngModelChange)="loadItems()" placeholder="Tipo, notas...">
           <mat-icon matSuffix>search</mat-icon>
         </mat-form-field>
         <mat-form-field appearance="outline">
@@ -73,7 +61,7 @@ import { AuthService } from '../../../core/services/auth.service';
             <div class="item-card">
               <div class="item-header">
                 <span class="item-date">{{ item.appointmentDate | date:'dd/MM/yyyy HH:mm' }}</span>
-                <span class="status-badge status-{{ item.status }}">{{ statusLabel(item.status) }}</span>
+                <span class="status-chip status-{{ item.status }}">{{ statusLabel(item.status) }}</span>
               </div>
               <p class="item-type">{{ item.type || 'Sin tipo' }}</p>
               @if (item.notes) {
@@ -99,39 +87,46 @@ import { AuthService } from '../../../core/services/auth.service';
     </div>
   `,
   styles: [`
-    .list-container { max-width: 960px; margin: 0 auto; padding: 28px 16px; }
-    .list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
-    .list-header h1 { margin: 0; }
-    .header-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-    .user-name { color: var(--cf-mid-dark); font-weight: 500; font-size: 14px; }
+    .list-container { padding: 28px 32px; max-width: 1100px; }
+    .list-header { margin-bottom: 20px; }
+    .list-header h1 { margin: 0; font-size: 26px; font-weight: 700; color: var(--cf-dark); }
     .filters { display: flex; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
     .filters mat-form-field { flex: 1; min-width: 200px; }
     .loading-state, .empty-state { text-align: center; padding: 48px; }
     .empty-state mat-icon { font-size: 48px; height: 48px; width: 48px; color: var(--cf-pale); }
     .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
-    .item-card { border-radius: 10px; padding: 16px; background: #fff; border: 1px solid var(--cf-lighter); transition: box-shadow .2s; }
-    .item-card:hover { box-shadow: 0 4px 16px rgba(0,146,224,.12); }
+    .item-card {
+      border-radius: 12px; padding: 16px; background: #fff;
+      border: 1px solid var(--cf-lighter); transition: box-shadow .2s;
+    }
+    .item-card:hover { box-shadow: 0 4px 16px rgba(0,146,224,.1); }
     .item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .item-date { font-weight: 600; color: var(--cf-mid-dark); }
+    .item-date { font-weight: 400; color: var(--cf-mid-dark); font-size: 14px; }
     .item-type { font-size: 15px; margin: 4px 0; color: #1a1a2e; text-transform: capitalize; }
     .item-notes { font-size: 13px; color: #666; margin: 4px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .item-meta { display: flex; gap: 16px; margin-top: 8px; }
-    .item-meta small { color: var(--cf-soft); font-weight: 500; }
+    .item-meta small { color: var(--cf-mid-dark); }
     .item-actions { display: flex; justify-content: flex-end; margin-top: 8px; }
     .total { text-align: right; color: var(--cf-pale); margin-top: 16px; font-size: 13px; }
+    .status-chip {
+      font-size: 11px; font-weight: 600; padding: 3px 9px;
+      border-radius: 20px; white-space: nowrap;
+    }
+    .status-scheduled  { background: #e3f2fd; color: #1565c0; }
+    .status-confirmed  { background: #e8f5e9; color: #2e7d32; }
+    .status-completed  { background: #f3e5f5; color: #7b1fa2; }
+    .status-cancelled  { background: #fce4ec; color: #c62828; }
+    .status-no_show    { background: #fff3e0; color: #e65100; }
   `],
 })
 export class AppointmentsListComponent implements OnInit {
+  private appointmentsService = inject(AppointmentsService);
+
   items = signal<Appointment[]>([]);
   loading = signal(false);
   total = signal(0);
   searchTerm = '';
   selectedStatus = '';
-
-  constructor(
-    private appointmentsService: AppointmentsService,
-    public auth: AuthService,
-  ) {}
 
   ngOnInit(): void {
     this.loadItems();
@@ -161,10 +156,10 @@ export class AppointmentsListComponent implements OnInit {
   }
 
   statusLabel(status: string): string {
-    const labels: Record<string, string> = {
+    const map: Record<string, string> = {
       scheduled: 'Programada', confirmed: 'Confirmada',
       completed: 'Completada', cancelled: 'Cancelada', no_show: 'No presentado',
     };
-    return labels[status] ?? status;
+    return map[status] ?? status;
   }
 }

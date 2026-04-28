@@ -3,12 +3,8 @@ import { authGuard } from './core/auth/auth.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
-  {
-    path: 'dashboard',
-    canActivate: [authGuard],
-    loadComponent: () =>
-      import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
-  },
+
+  // Rutas públicas (auth)
   {
     path: 'auth',
     children: [
@@ -24,32 +20,54 @@ export const routes: Routes = [
       },
     ],
   },
+
+  // Rutas protegidas — dentro del shell (sidebar + topbar)
   {
-    path: 'appointments',
+    path: '',
     canActivate: [authGuard],
+    loadComponent: () =>
+      import('./layout/shell/shell.component').then(m => m.ShellComponent),
     children: [
       {
-        path: '',
+        path: 'dashboard',
         loadComponent: () =>
-          import('./features/appointments/appointments-list/appointments-list.component').then(
-            m => m.AppointmentsListComponent
+          import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
+      },
+      {
+        path: 'patients',
+        loadComponent: () =>
+          import('./features/patients/patients-list/patients-list.component').then(
+            m => m.PatientsListComponent
           ),
       },
       {
-        path: 'new',
-        loadComponent: () =>
-          import('./features/appointments/appointments-form/appointments-form.component').then(
-            m => m.AppointmentsFormComponent
-          ),
-      },
-      {
-        path: ':id/edit',
-        loadComponent: () =>
-          import('./features/appointments/appointments-form/appointments-form.component').then(
-            m => m.AppointmentsFormComponent
-          ),
+        path: 'appointments',
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./features/appointments/appointments-list/appointments-list.component').then(
+                m => m.AppointmentsListComponent
+              ),
+          },
+          {
+            path: 'new',
+            loadComponent: () =>
+              import('./features/appointments/appointments-form/appointments-form.component').then(
+                m => m.AppointmentsFormComponent
+              ),
+          },
+          {
+            path: ':id/edit',
+            loadComponent: () =>
+              import('./features/appointments/appointments-form/appointments-form.component').then(
+                m => m.AppointmentsFormComponent
+              ),
+          },
+        ],
       },
     ],
   },
-  { path: '**', redirectTo: '/appointments' },
+
+  { path: '**', redirectTo: '/dashboard' },
 ];

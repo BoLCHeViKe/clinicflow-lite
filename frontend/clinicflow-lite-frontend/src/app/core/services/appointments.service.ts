@@ -44,9 +44,28 @@ export class AppointmentsService {
   }
 }
 
+export interface TodayAppointment {
+  id: number;
+  patientName: string;
+  type: string;
+  appointmentDate: string;
+  duration: number;
+  status: string;
+}
+
+export interface RecentPatient {
+  id: number;
+  name: string;
+  birthDate: string;
+  lastType: string;
+  nextAppointment: string | null;
+}
+
 export interface DashboardStats {
-  total: number;
-  thisWeek: number;
-  byStatus: { status: string; count: number }[];
-  recent: Appointment[];
+  todayCount: number;
+  confirmedCount: number;
+  pendingCount: number;
+  activePatientsCount: number;
+  todayAppointments: TodayAppointment[];
+  recentPatients: RecentPatient[];
 }

@@ -43,9 +43,10 @@ mat-card {
   box-shadow: 0 2px 8px rgba(0, 146, 224, 0.08) !important;
 }
 
-/* Botón primario con azul medio */
+/* Botón primario — azul claro con texto oscuro */
 .mdc-button--raised, .mat-mdc-raised-button {
-  background-color: var(--cf-primary) !important;
+  background-color: var(--cf-lighter) !important;
+  color: var(--cf-dark) !important;
 }
 
 /* Botones outlined */
