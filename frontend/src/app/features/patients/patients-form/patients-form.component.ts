@@ -26,15 +26,20 @@ import { PatientsService, PatientDto } from '../../../core/services/patients.ser
 
         <div class="row-2">
           <mat-form-field appearance="outline">
+            <mat-label>DNI / Identificación</mat-label>
+            <input matInput formControlName="dni" placeholder="12345678A">
+          </mat-form-field>
+          <mat-form-field appearance="outline">
             <mat-label>Teléfono</mat-label>
             <input matInput formControlName="phone" placeholder="600 123 456">
           </mat-form-field>
-          <mat-form-field appearance="outline">
-            <mat-label>Email</mat-label>
-            <input matInput formControlName="email" type="email" placeholder="paciente@email.com">
-            @if (form.get('email')?.hasError('email')) { <mat-error>Email no válido</mat-error> }
-          </mat-form-field>
         </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" type="email" placeholder="paciente@email.com">
+          @if (form.get('email')?.hasError('email')) { <mat-error>Email no válido</mat-error> }
+        </mat-form-field>
 
         <div class="row-2">
           <mat-form-field appearance="outline">
@@ -51,6 +56,17 @@ import { PatientsService, PatientDto } from '../../../core/services/patients.ser
             </mat-select>
           </mat-form-field>
         </div>
+
+        @if (isEditing) {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Estado</mat-label>
+            <mat-select formControlName="status">
+              <mat-option value="active">Activo</mat-option>
+              <mat-option value="inactive">Inactivo</mat-option>
+              <mat-option value="discharged">Dado de alta</mat-option>
+            </mat-select>
+          </mat-form-field>
+        }
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Dirección</mat-label>
@@ -95,10 +111,12 @@ export class PatientsFormComponent implements OnInit {
 
   form = this.fb.group({
     name:        ['', [Validators.required, Validators.minLength(2)]],
+    dni:         [''],
     email:       ['', Validators.email],
     phone:       [''],
     birthDate:   [''],
     gender:      [''],
+    status:      ['active'],
     address:     [''],
     medicalNotes:[''],
   });
@@ -118,10 +136,12 @@ export class PatientsFormComponent implements OnInit {
         const p = res.data;
         this.form.patchValue({
           name: p.name,
+          dni: p.dni ?? '',
           email: p.email ?? '',
           phone: p.phone ?? '',
           birthDate: p.birthDate ? p.birthDate.split('T')[0] : '',
           gender: p.gender ?? '',
+          status: p.status,
           address: p.address ?? '',
           medicalNotes: p.medicalNotes ?? '',
         });
@@ -137,6 +157,7 @@ export class PatientsFormComponent implements OnInit {
     const raw = this.form.value;
     const dto: PatientDto = {
       name: raw.name!,
+      dni: raw.dni || undefined,
       email: raw.email || undefined,
       phone: raw.phone || undefined,
       birthDate: raw.birthDate || undefined,
@@ -144,6 +165,7 @@ export class PatientsFormComponent implements OnInit {
       address: raw.address || undefined,
       medicalNotes: raw.medicalNotes || undefined,
     };
+    if (this.isEditing) dto.status = (raw.status as PatientDto['status']) || 'active';
 
     const req = this.isEditing
       ? this.patientsService.update(this.patientId!, dto)

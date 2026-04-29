@@ -1,5 +1,9 @@
 const { body } = require('express-validator');
 
+const OPTIONAL_DNI = body('dni')
+  .optional({ checkFalsy: true })
+  .isLength({ max: 20 }).withMessage('El DNI no puede superar 20 caracteres');
+
 const NAME_RULE = body('name')
   .trim()
   .notEmpty().withMessage('El nombre es obligatorio')
@@ -31,7 +35,7 @@ const OPTIONAL_NOTES = body('medicalNotes')
   .isLength({ max: 5000 }).withMessage('Las notas médicas no pueden superar 5000 caracteres');
 
 exports.createPatientValidators = [
-  NAME_RULE, OPTIONAL_EMAIL, OPTIONAL_PHONE, OPTIONAL_BIRTHDATE,
+  NAME_RULE, OPTIONAL_DNI, OPTIONAL_EMAIL, OPTIONAL_PHONE, OPTIONAL_BIRTHDATE,
   OPTIONAL_GENDER, OPTIONAL_ADDRESS, OPTIONAL_NOTES,
 ];
 
@@ -41,7 +45,7 @@ exports.updatePatientValidators = [
     .trim()
     .notEmpty().withMessage('El nombre no puede estar vacío')
     .isLength({ min: 2, max: 100 }).withMessage('El nombre debe tener entre 2 y 100 caracteres'),
-  OPTIONAL_EMAIL, OPTIONAL_PHONE, OPTIONAL_BIRTHDATE,
+  OPTIONAL_DNI, OPTIONAL_EMAIL, OPTIONAL_PHONE, OPTIONAL_BIRTHDATE,
   OPTIONAL_GENDER, OPTIONAL_ADDRESS, OPTIONAL_NOTES,
-  body('status').optional().isIn(['active', 'inactive']).withMessage('Estado inválido'),
+  body('status').optional().isIn(['active', 'inactive', 'discharged']).withMessage('Estado inválido'),
 ];

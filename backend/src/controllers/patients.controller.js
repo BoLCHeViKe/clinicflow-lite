@@ -1,30 +1,57 @@
 const pool = require('../db/connection');
 const { validationResult } = require('express-validator');
 
-// Campos que se devuelven en listados (sin medicalNotes ni address — datos sensibles/voluminosos)
-const LIST_FIELDS = 'id, name, email, phone, birthDate, gender, status, createdAt';
+const LIST_FIELDS = 'p.id, p.name, p.dni, p.email, p.phone, p.birthDate, p.gender, p.status, p.createdAt';
 
 exports.getAll = async (req, res) => {
   try {
-    let patients;
+    const { search, status } = req.query;
 
+    const conditions = [];
+    const params = [];
+
+    // Por defecto excluir dados de alta; 'all' = sin filtro; cualquier otro = filtrar por ese status
+    if (status === 'all') {
+      // sin filtro de estado
+    } else if (status) {
+      conditions.push('p.status = ?');
+      params.push(status);
+    } else {
+      conditions.push("p.status != 'discharged'");
+    }
+
+    if (search) {
+      conditions.push('(p.name LIKE ? OR p.dni LIKE ? OR p.phone LIKE ?)');
+      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+    }
+
+    const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    let patients;
     if (req.user.role === 'professional') {
-      // Profesionales: solo ven pacientes con los que tienen citas
+      const professionalCondition = 'EXISTS (SELECT 1 FROM appointments a WHERE a.patientId = p.id AND a.professionalId = ?)';
+      const fullWhere = conditions.length
+        ? `WHERE ${conditions.join(' AND ')} AND ${professionalCondition}`
+        : `WHERE ${professionalCondition}`;
+
       [patients] = await pool.query(
-        `SELECT DISTINCT ${LIST_FIELDS}
+        `SELECT ${LIST_FIELDS},
+                (SELECT MAX(a2.appointmentDate) FROM appointments a2
+                 WHERE a2.patientId = p.id AND a2.status = 'completed') AS lastVisit
          FROM patients p
-         WHERE status = 'active'
-           AND EXISTS (
-             SELECT 1 FROM appointments a
-             WHERE a.patientId = p.id AND a.professionalId = ?
-           )
-         ORDER BY name ASC`,
-        [req.user.id]
+         ${fullWhere}
+         ORDER BY p.name ASC`,
+        [...params, req.user.id]
       );
     } else {
-      // Admin / receptionist: todos los pacientes (sin medicalNotes en lista)
       [patients] = await pool.query(
-        `SELECT ${LIST_FIELDS} FROM patients WHERE status = 'active' ORDER BY name ASC`
+        `SELECT ${LIST_FIELDS},
+                (SELECT MAX(a2.appointmentDate) FROM appointments a2
+                 WHERE a2.patientId = p.id AND a2.status = 'completed') AS lastVisit
+         FROM patients p
+         ${where}
+         ORDER BY p.name ASC`,
+        params
       );
     }
 
@@ -37,11 +64,16 @@ exports.getAll = async (req, res) => {
 
 exports.getById = async (req, res) => {
   try {
-    const [[patient]] = await pool.query('SELECT * FROM patients WHERE id = ?', [req.params.id]);
+    const [[patient]] = await pool.query(
+      `SELECT p.*,
+              (SELECT MAX(a2.appointmentDate) FROM appointments a2
+               WHERE a2.patientId = p.id AND a2.status = 'completed') AS lastVisit
+       FROM patients p WHERE p.id = ?`,
+      [req.params.id]
+    );
     if (!patient) return res.status(404).json({ success: false, error: 'Paciente no encontrado' });
 
     if (req.user.role === 'professional') {
-      // Verificar que el profesional tiene al menos una cita con este paciente
       const [[access]] = await pool.query(
         'SELECT 1 FROM appointments WHERE patientId = ? AND professionalId = ? LIMIT 1',
         [req.params.id, req.user.id]
@@ -51,11 +83,42 @@ exports.getById = async (req, res) => {
       }
     }
 
-    // El detalle incluye todos los campos (medicalNotes, address) — solo para usuarios autorizados
     res.json({ success: true, data: patient });
   } catch (error) {
     console.error('Error al obtener paciente:', error);
     res.status(500).json({ success: false, error: 'Error al obtener paciente' });
+  }
+};
+
+exports.getHistory = async (req, res) => {
+  try {
+    const [[patient]] = await pool.query('SELECT id, name FROM patients WHERE id = ?', [req.params.id]);
+    if (!patient) return res.status(404).json({ success: false, error: 'Paciente no encontrado' });
+
+    if (req.user.role === 'professional') {
+      const [[access]] = await pool.query(
+        'SELECT 1 FROM appointments WHERE patientId = ? AND professionalId = ? LIMIT 1',
+        [req.params.id, req.user.id]
+      );
+      if (!access) {
+        return res.status(403).json({ success: false, error: 'No tienes acceso a este paciente' });
+      }
+    }
+
+    const [history] = await pool.query(
+      `SELECT a.id, a.appointmentDate, a.duration, a.type, a.status, a.notes,
+              u.name AS professionalName
+       FROM appointments a
+       JOIN users u ON a.professionalId = u.id
+       WHERE a.patientId = ?
+       ORDER BY a.appointmentDate DESC`,
+      [req.params.id]
+    );
+
+    res.json({ success: true, data: history });
+  } catch (error) {
+    console.error('Error al obtener historial:', error);
+    res.status(500).json({ success: false, error: 'Error al obtener historial' });
   }
 };
 
@@ -65,11 +128,11 @@ exports.create = async (req, res) => {
     return res.status(422).json({ success: false, errors: errors.array() });
   }
   try {
-    const { name, email, phone, birthDate, gender, address, medicalNotes } = req.body;
+    const { name, dni, email, phone, birthDate, gender, address, medicalNotes } = req.body;
 
     const [result] = await pool.query(
-      'INSERT INTO patients (name, email, phone, birthDate, gender, address, medicalNotes) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [name.trim(), email || null, phone || null, birthDate || null, gender || null, address || null, medicalNotes || null]
+      'INSERT INTO patients (name, dni, email, phone, birthDate, gender, address, medicalNotes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+      [name.trim(), dni || null, email || null, phone || null, birthDate || null, gender || null, address || null, medicalNotes || null]
     );
 
     const [[created]] = await pool.query('SELECT * FROM patients WHERE id = ?', [result.insertId]);
@@ -89,7 +152,7 @@ exports.update = async (req, res) => {
     const [[patient]] = await pool.query('SELECT id FROM patients WHERE id = ?', [req.params.id]);
     if (!patient) return res.status(404).json({ success: false, error: 'Paciente no encontrado' });
 
-    const ALLOWED = ['name', 'email', 'phone', 'birthDate', 'gender', 'address', 'medicalNotes', 'status'];
+    const ALLOWED = ['name', 'dni', 'email', 'phone', 'birthDate', 'gender', 'address', 'medicalNotes', 'status'];
     const fields = Object.keys(req.body).filter(k => ALLOWED.includes(k) && req.body[k] !== undefined);
     if (fields.length === 0) {
       return res.status(422).json({ success: false, error: 'No hay campos válidos para actualizar' });

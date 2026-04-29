@@ -32,13 +32,14 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS patients (
   id           INT AUTO_INCREMENT PRIMARY KEY,
   name         VARCHAR(100) NOT NULL,
+  dni          VARCHAR(20),
   email        VARCHAR(150),
   phone        VARCHAR(20),
   birthDate    DATE,
   gender       ENUM('male','female','other'),
   address      TEXT,
   medicalNotes TEXT,
-  status       ENUM('active','inactive') DEFAULT 'active',
+  status       ENUM('active','inactive','discharged') NOT NULL DEFAULT 'active',
   createdAt    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

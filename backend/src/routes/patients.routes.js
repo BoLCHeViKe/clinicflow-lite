@@ -12,6 +12,11 @@ router.get('/',
   controller.getAll
 );
 
+router.get('/:id/history',
+  logAccess('patients', 'view_history'),
+  controller.getHistory
+);
+
 router.get('/:id',
   logAccess('patients', 'view_detail'),
   controller.getById
