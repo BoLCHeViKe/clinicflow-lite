@@ -21,21 +21,18 @@ exports.register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
     const [result] = await pool.query(
-      'INSERT INTO users (name, email, password) VALUES (?, ?, ?)',
-      [name, email, hashedPassword]
+      'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
+      [name, email, hashedPassword, 'professional']
     );
 
+    const user = { id: result.insertId, name, email, role: 'professional' };
     const token = jwt.sign(
-      { id: result.insertId, email, name },
+      { id: user.id, email, name, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
 
-    res.status(201).json({
-      message: 'Usuario registrado correctamente',
-      token,
-      user: { id: result.insertId, name, email },
-    });
+    res.status(201).json({ message: 'Usuario registrado correctamente', token, user });
   } catch (error) {
     console.error('Error en registro:', error);
     res.status(500).json({ error: 'Error al registrar el usuario' });
@@ -56,14 +53,13 @@ exports.login = async (req, res) => {
     }
 
     const user = users[0];
-
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
       return res.status(401).json({ error: 'Credenciales incorrectas' });
     }
 
     const token = jwt.sign(
-      { id: user.id, email: user.email, name: user.name },
+      { id: user.id, email: user.email, name: user.name, role: user.role },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
     );
@@ -71,7 +67,7 @@ exports.login = async (req, res) => {
     res.json({
       message: 'Login correcto',
       token,
-      user: { id: user.id, name: user.name, email: user.email },
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
     });
   } catch (error) {
     console.error('Error en login:', error);
@@ -82,7 +78,7 @@ exports.login = async (req, res) => {
 exports.me = async (req, res) => {
   try {
     const [users] = await pool.query(
-      'SELECT id, name, email, createdAt FROM users WHERE id = ?',
+      'SELECT id, name, email, role, createdAt FROM users WHERE id = ?',
       [req.user.id]
     );
     if (users.length === 0) {

@@ -9,17 +9,28 @@ const pool = mysql.createPool({
   connectionLimit: 10,
   queueLimit: 0,
   timezone: '+00:00',
+  charset: 'utf8mb4',
 });
 
-// Verificar la conexión al arrancar
-pool.getConnection()
-  .then(conn => {
-    console.log('✅ MySQL conectado correctamente');
-    conn.release();
-  })
-  .catch(err => {
-    console.error('❌ Error conectando a MySQL:', err.message);
-    process.exit(1);
-  });
+// Verificar la conexión al arrancar con reintentos
+async function waitForDB(retries = 10, delay = 3000) {
+  for (let i = 1; i <= retries; i++) {
+    try {
+      const conn = await pool.getConnection();
+      console.log('✅ MySQL conectado correctamente');
+      conn.release();
+      return;
+    } catch (err) {
+      console.warn(`⏳ MySQL no disponible aún (intento ${i}/${retries}): ${err.message}`);
+      if (i === retries) {
+        console.error('❌ No se pudo conectar a MySQL tras varios intentos');
+        process.exit(1);
+      }
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+}
+
+waitForDB();
 
 module.exports = pool;

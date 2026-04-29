@@ -3,32 +3,52 @@ const { validationResult } = require('express-validator');
 
 exports.getAll = async (req, res) => {
   try {
-    const { status, search, page = 1, limit = 20 } = req.query;
-    const offset = (page - 1) * limit;
+    const { status, search, date, upcoming, page = 1, limit = 50 } = req.query;
+
+    // Profesionales solo pueden ver sus propias citas; admin/receptionist puede filtrar por cualquier profesional
+    const effectiveProfessionalId = req.user.role === 'professional'
+      ? req.user.id.toString()
+      : req.query.professionalId;
 
     const conditions = [];
-    const params = [];
+    const conditionParams = [];
 
+    if (date) {
+      conditions.push('DATE(a.appointmentDate) = ?');
+      conditionParams.push(date);
+    }
+    if (upcoming === 'true') {
+      conditions.push('a.appointmentDate BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 24 HOUR)');
+    }
+    if (effectiveProfessionalId) {
+      conditions.push('a.professionalId = ?');
+      conditionParams.push(parseInt(effectiveProfessionalId));
+    }
     if (status) {
       conditions.push('a.status = ?');
-      params.push(status);
+      conditionParams.push(status);
     }
     if (search) {
       conditions.push('(a.type LIKE ? OR a.notes LIKE ? OR p.name LIKE ?)');
-      params.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      conditionParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
-    const query = `SELECT a.* FROM appointments a LEFT JOIN patients p ON a.patientId = p.id ${where} ORDER BY a.appointmentDate DESC LIMIT ? OFFSET ?`;
-    params.push(parseInt(limit), parseInt(offset));
+    const joins = 'LEFT JOIN patients p ON a.patientId = p.id LEFT JOIN users u ON a.professionalId = u.id';
+    const offset = (parseInt(page) - 1) * parseInt(limit);
 
-    const [rows] = await pool.query(query, params);
+    const [rows] = await pool.query(
+      `SELECT a.*, p.name AS patientName, u.name AS professionalName
+       FROM appointments a ${joins} ${where}
+       ORDER BY a.appointmentDate ASC
+       LIMIT ? OFFSET ?`,
+      [...conditionParams, parseInt(limit), offset]
+    );
 
-    const countParams = [];
-    const countConditions = [];
-    if (status) { countConditions.push('status = ?'); countParams.push(status); }
-    const countWhere = countConditions.length ? `WHERE ${countConditions.join(' AND ')}` : '';
-    const [[{ total }]] = await pool.query(`SELECT COUNT(*) as total FROM appointments ${countWhere}`, countParams);
+    const [[{ total }]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM appointments a ${joins} ${where}`,
+      conditionParams
+    );
 
     res.json({
       success: true,
@@ -43,10 +63,16 @@ exports.getAll = async (req, res) => {
 
 exports.getById = async (req, res) => {
   try {
-    const [rows] = await pool.query(
-      'SELECT * FROM appointments WHERE id = ?',
-      [req.params.id]
-    );
+    let query = 'SELECT * FROM appointments WHERE id = ?';
+    const params = [req.params.id];
+
+    // Profesionales solo pueden ver sus propias citas
+    if (req.user.role === 'professional') {
+      query += ' AND professionalId = ?';
+      params.push(req.user.id);
+    }
+
+    const [rows] = await pool.query(query, params);
     if (rows.length === 0) {
       return res.status(404).json({ success: false, error: 'Cita no encontrada' });
     }
@@ -85,10 +111,15 @@ exports.update = async (req, res) => {
     return res.status(422).json({ success: false, errors: errors.array() });
   }
   try {
-    const [existing] = await pool.query(
-      'SELECT id FROM appointments WHERE id = ?',
-      [req.params.id]
-    );
+    // Profesionales solo pueden actualizar sus propias citas
+    let ownerQuery = 'SELECT id FROM appointments WHERE id = ?';
+    const ownerParams = [req.params.id];
+    if (req.user.role === 'professional') {
+      ownerQuery += ' AND professionalId = ?';
+      ownerParams.push(req.user.id);
+    }
+
+    const [existing] = await pool.query(ownerQuery, ownerParams);
     if (existing.length === 0) {
       return res.status(404).json({ success: false, error: 'Cita no encontrada' });
     }
@@ -101,11 +132,7 @@ exports.update = async (req, res) => {
 
     const setClause = fields.map(f => `${f} = ?`).join(', ');
     const values = [...fields.map(f => req.body[f]), req.params.id];
-
-    await pool.query(
-      `UPDATE appointments SET ${setClause} WHERE id = ?`,
-      values
-    );
+    await pool.query(`UPDATE appointments SET ${setClause} WHERE id = ?`, values);
 
     const [updated] = await pool.query('SELECT * FROM appointments WHERE id = ?', [req.params.id]);
     res.json({ success: true, data: updated[0] });
@@ -117,10 +144,7 @@ exports.update = async (req, res) => {
 
 exports.remove = async (req, res) => {
   try {
-    const [existing] = await pool.query(
-      'SELECT id FROM appointments WHERE id = ?',
-      [req.params.id]
-    );
+    const [existing] = await pool.query('SELECT id FROM appointments WHERE id = ?', [req.params.id]);
     if (existing.length === 0) {
       return res.status(404).json({ success: false, error: 'Cita no encontrada' });
     }
