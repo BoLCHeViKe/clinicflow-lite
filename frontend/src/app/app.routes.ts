@@ -1,11 +1,12 @@
 import { Routes } from '@angular/router';
 import { authGuard } from './core/auth/auth.guard';
+import { adminGuard } from './core/auth/admin.guard';
 import { roleGuard } from './core/auth/role.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
 
-  // Rutas públicas
+  // Pública — acceso sin sesión
   {
     path: 'auth',
     children: [
@@ -22,6 +23,13 @@ export const routes: Routes = [
     ],
   },
 
+  // 403 — acceso denegado (fuera del shell para que se vea completa)
+  {
+    path: 'forbidden',
+    loadComponent: () =>
+      import('./features/forbidden/forbidden.component').then(m => m.ForbiddenComponent),
+  },
+
   // Rutas protegidas — dentro del shell
   {
     path: '',
@@ -34,6 +42,8 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/dashboard/dashboard.component').then(m => m.DashboardComponent),
       },
+
+      // ── Pacientes ────────────────────────────────────────────────
       {
         path: 'patients',
         children: [
@@ -76,6 +86,8 @@ export const routes: Routes = [
           },
         ],
       },
+
+      // ── Citas ────────────────────────────────────────────────────
       {
         path: 'appointments',
         children: [
@@ -103,6 +115,20 @@ export const routes: Routes = [
               ),
           },
         ],
+      },
+
+      // ── Admin exclusivo ──────────────────────────────────────────
+      {
+        path: 'reports',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/admin/reports.component').then(m => m.ReportsComponent),
+      },
+      {
+        path: 'settings',
+        canActivate: [adminGuard],
+        loadComponent: () =>
+          import('./features/admin/settings.component').then(m => m.SettingsComponent),
       },
     ],
   },
