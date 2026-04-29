@@ -266,11 +266,27 @@ export class PatientDetailComponent implements OnInit {
 
   goBack(): void { this.router.navigate(['/patients']); }
 
-  calcAge(birthDate: string): number {
-    const today = new Date(), birth = new Date(birthDate + 'T12:00:00');
+  calcAge(birthDate: string): number | string {
+    // 1. Validación inicial: si no hay fecha, no intentes calcular
+    if (!birthDate) return 0;
+
+    const today = new Date();
+    // Usamos un bloque try/catch o validamos el objeto Date
+    const birth = new Date(birthDate.includes('T') ? birthDate : birthDate + 'T12:00:00');
+
+    // 2. Si la fecha sigue siendo inválida (NaN), retornamos un valor seguro
+    if (isNaN(birth.getTime())) {
+      console.error("Fecha de nacimiento inválida:", birthDate);
+      return 0; 
+    }
+
     let age = today.getFullYear() - birth.getFullYear();
-    if (today.getMonth() - birth.getMonth() < 0 ||
-       (today.getMonth() === birth.getMonth() && today.getDate() < birth.getDate())) age--;
+    const m = today.getMonth() - birth.getMonth();
+
+    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+      age--;
+    }
+
     return age;
   }
 
