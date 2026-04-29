@@ -1,0 +1,53 @@
+services:
+
+  db:
+    image: mysql:8.0
+    env_file: .env
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  backend:
+    build: ./backend
+    env_file: .env
+    # Override FRONTEND_URL and DB_HOST using variables from the root .env
+    environment:
+      FRONTEND_URL: http://${APP_HOST_IP}:4200
+      DB_HOST: db # Ensure backend connects to the 'db' service within Docker network
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    ports:
+      - "3001:3001"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    # Command to ensure dependencies are installed and then start the dev server
+    command: ["sh", "-c", "npm install && npm run dev"]
+
+  frontend:
+    build: ./frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.angular
+    # Pass APP_HOST_IP as an environment variable to the frontend container
+    environment:
+      APP_HOST_IP: ${APP_HOST_IP}
+    ports:
+      - "4200:4200"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    command: ["sh", "-c", "npm install && npx ng serve --host 0.0.0.0 --port 4200 --proxy-config proxy.conf.json --poll 1000"]
+
+volumes:
+  db_data:

@@ -43,3 +43,13 @@ docker-compose.yml
 # Ignorar archivos específicos de frontend y backend si fuera necesario
 frontend/dist
 backend/__pycache__
+
+
+node_modules
+.angular
+.git
+.env
+mysql_data
+**/dist
+**/node_modules
+npm-debug.log

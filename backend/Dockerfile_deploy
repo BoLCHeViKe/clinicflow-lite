@@ -1,0 +1,8 @@
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+RUN npm install
+COPY . .
+EXPOSE 3001
+# Asegúrate de tener un script "start" en tu package.json que no use nodemon si es posible
+CMD ["npm", "run", "dev"]

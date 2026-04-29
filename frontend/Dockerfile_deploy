@@ -1,0 +1,9 @@
+FROM node:20-alpine
+WORKDIR /app
+COPY package*.json ./
+# Instalación limpia para producción
+RUN npm install
+COPY . .
+EXPOSE 4200
+# Eliminamos el npm install del comando final
+CMD ["npx", "ng", "serve", "--host", "0.0.0.0", "--port", "4200", "--disable-host-check"]
